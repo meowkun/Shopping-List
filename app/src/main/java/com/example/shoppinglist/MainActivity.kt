@@ -36,43 +36,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun ShoppingList() {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        var shoppingItems by remember { mutableStateOf(listOf<ShoppingItem>()) }
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Button(
-                onClick = { /*TODO*/ },
-                modifier = Modifier.align(alignment = Alignment.CenterHorizontally)
-            ) {
-                Text(text = "Add Item")
-            }
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                items(shoppingItems) {
-
-                }
-            }
-        }
-    }
-}
-
-data class ShoppingItem(
-    val id: Int,
-    val name: String,
-    val quantity: Int,
-    val isEditing: Boolean = false
-)
-
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {

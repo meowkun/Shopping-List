@@ -56,63 +56,94 @@ fun ShoppingList() {
                 }
             }
         }
-        if (showDialog) {
-            AlertDialog(onDismissRequest = { showDialog = false },
-                confirmButton = {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Button(onClick = {
-                            if (itemName.isNotBlank()) {
-                                val newItem = ShoppingItem(
-                                    id = shoppingItems.size + 1,
-                                    name = itemName,
-                                    quantity = qty.toInt()
-                                )
-                                shoppingItems += newItem
-                                showDialog = false
-                                itemName = ""
-                                qty = ""
-                            }
-                        }) {
-                            Text(text = "Add")
-                        }
+        AddItemDialog(
+            showDialog = showDialog,
+            itemName = itemName,
+            qty = qty,
+            dismissAction = { showDialog = false },
+            addItemAction = {
+                if (itemName.isNotBlank()) {
+                    val newItem = ShoppingItem(
+                        id = shoppingItems.size + 1,
+                        name = itemName,
+                        quantity = qty.toInt()
+                    )
+                    shoppingItems += newItem
+                    showDialog = false
+                    itemName = ""
+                    qty = ""
+                }
+            },
+            cancelAction = {
+                showDialog = false
+                itemName = ""
+                qty = ""
+            },
+            updateItemName = {
+                itemName = it
+            },
+            updateItemQty = {
+                qty = it
+            }
+        )
+    }
+}
 
-                        Button(onClick = {
-                            showDialog = false
-                            itemName = ""
-                            qty = ""
-                        }) {
-                            Text("Cancel")
-                        }
+@Composable
+fun AddItemDialog(
+    showDialog: Boolean,
+    itemName: String,
+    qty: String,
+    dismissAction: () -> Unit,
+    addItemAction: () -> Unit,
+    cancelAction: () -> Unit,
+    updateItemName: (String) -> Unit,
+    updateItemQty: (String) -> Unit
+) {
+    if (showDialog) {
+        AlertDialog(onDismissRequest = { dismissAction() },
+            confirmButton = {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Button(onClick = {
+                        addItemAction()
+                    }) {
+                        Text(text = "Add")
                     }
-                },
-                title = {
-                    Column(
-                        verticalArrangement = Arrangement.SpaceAround,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            style = MaterialTheme.typography.labelLarge,
-                            text = "Add Shopping Item"
-                        )
-                        OutlinedTextField(
-                            value = itemName,
-                            onValueChange = { itemName = it },
-                            label = { Text(text = "Item") }
-                        )
 
-                        OutlinedTextField(
-                            value = qty,
-                            onValueChange = { qty = it },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            label = { Text(text = "Qty") }
-                        )
+                    Button(onClick = {
+                        cancelAction()
+                    }) {
+                        Text("Cancel")
                     }
                 }
-            )
-        }
+            },
+            title = {
+                Column(
+                    verticalArrangement = Arrangement.SpaceAround,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        style = MaterialTheme.typography.labelLarge,
+                        text = "Add Shopping Item"
+                    )
+                    OutlinedTextField(
+                        value = itemName,
+                        onValueChange = { updateItemName(it) },
+                        label = { Text(text = "Item") }
+                    )
+
+                    OutlinedTextField(
+                        value = qty,
+                        onValueChange = { updateItemQty(it) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        label = { Text(text = "Qty") }
+                    )
+                }
+            }
+        )
     }
 }
 

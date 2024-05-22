@@ -1,5 +1,10 @@
 package com.example.shoppinglist
 
+import android.Manifest
+import android.content.Context
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -35,9 +41,50 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.navigation.NavController
+import com.example.locationapp.LocationUtils
 
 @Composable
-fun ShoppingList() {
+fun ShoppingListApp(
+    locationUtils: LocationUtils,
+    viewModel: LocationViewModel,
+    navController: NavController,
+    context: Context,
+    address: String
+) {
+    val requestsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        onResult = { permissions ->
+            if (permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+                && permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+            ) {
+                locationUtils.requestLocationUpdate(viewModel = viewModel)
+            } else {
+                val rationaleRequired = ActivityCompat.shouldShowRequestPermissionRationale(
+                    context as MainActivity,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) || ActivityCompat.shouldShowRequestPermissionRationale(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+                if (rationaleRequired) {
+                    Toast.makeText(
+                        context,
+                        "Location Permission is required for this feature to work",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Location Permission is required. Please enable it in android setting",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    )
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -52,7 +99,8 @@ fun ShoppingList() {
                 val newItem = ShoppingItem(
                     id = shoppingItems.size + 1,
                     name = itemName,
-                    quantity = qty.toIntOrNull() ?: 1
+                    quantity = qty.toIntOrNull() ?: 1,
+                    address = address
                 )
                 shoppingItems += newItem
                 showDialog = false
@@ -118,6 +166,18 @@ fun ShoppingList() {
             },
             onItemQtyChange = {
                 qty = it
+            },
+            locationUtils = locationUtils,
+            context = context,
+            viewModel = viewModel,
+            navController = navController,
+            requestsPermission = {
+                requestsPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
             }
         )
     }
@@ -160,8 +220,23 @@ fun ReadOnlyItemRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = shoppingItem.name)
-        Text(text = "Qty: ${shoppingItem.quantity}")
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(8.dp)
+        ) {
+            Row {
+                Text(text = shoppingItem.name)
+                Text(text = "Qty: ${shoppingItem.quantity}")
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(imageVector = Icons.Default.LocationOn, contentDescription = null)
+                Text(text = shoppingItem.address)
+            }
+        }
+
         Row {
             IconButton(onClick = { onEditClick(shoppingItem.id) }) {
                 Icon(
@@ -227,11 +302,16 @@ fun AddItemDialog(
     showDialog: Boolean,
     itemName: String,
     qty: String,
+    locationUtils: LocationUtils,
+    context: Context,
+    viewModel: LocationViewModel,
+    navController: NavController,
     onDismiss: () -> Unit,
     onAddClick: () -> Unit,
     onCancelClick: () -> Unit,
     onItemNameChange: (String) -> Unit,
-    onItemQtyChange: (String) -> Unit
+    onItemQtyChange: (String) -> Unit,
+    requestsPermission: () -> Unit
 ) {
     if (showDialog) {
         AlertDialog(onDismissRequest = { onDismiss.invoke() },
@@ -274,6 +354,18 @@ fun AddItemDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         label = { Text(text = "Qty") }
                     )
+                    Button(onClick = {
+                        if(locationUtils.hasLocationPermission(context = context)) {
+                            locationUtils.requestLocationUpdate(viewModel = viewModel)
+                            navController.navigate("locationScreen") {
+                                this.launchSingleTop
+                            }
+                        } else {
+                            requestsPermission()
+                        }
+                    }) {
+                        Text(text = "Address")
+                    }
                 }
             }
         )
